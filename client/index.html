@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>C++ WebSocket Chatroom</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #messages { border: 1px solid #ddd; height: 400px; overflow: auto; padding: 8px; }
+    #controls { margin-top: 8px; }
+    #nick { width: 150px; }
+    #msg { width: 60%; }
+    button { margin-left: 4px; }
+    .system { color: #666; font-style: italic; }
+    .me { color: #0b6; }
+  </style>
+</head>
+<body>
+  <h3>C++ WebSocket Chatroom</h3>
+  <div>
+    <label>Nickname: <input id="nick" placeholder="Enter nickname" /></label>
+    <button id="setNick">Set Nickname</button>
+  </div>
+
+  <div id="messages"></div>
+
+  <div id="controls">
+    <input id="msg" placeholder="Type a message and press Enter" />
+    <button id="send">Send</button>
+  </div>
+
+<script>
+  const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + (location.hostname || "localhost") + ":9001";
+  const ws = new WebSocket(wsUrl);
+
+  const messages = document.getElementById("messages");
+  const msgInput = document.getElementById("msg");
+  const nickInput = document.getElementById("nick");
+
+  function addLine(text, cls) {
+    const p = document.createElement("div");
+    if (cls) p.className = cls;
+    p.textContent = text;
+    messages.appendChild(p);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  ws.onopen = () => addLine("Connected to server", "system");
+  ws.onclose = () => addLine("Disconnected", "system");
+  ws.onerror = (e) => addLine("WebSocket error", "system");
+
+  ws.onmessage = (evt) => {
+    addLine(evt.data);
+  };
+
+  document.getElementById("send").addEventListener("click", sendMessage);
+  msgInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  document.getElementById("setNick").addEventListener("click", () => {
+    const nick = nickInput.value.trim();
+    if (!nick) return;
+    ws.send("/nick " + nick);
+    addLine("Nickname set to " + nick, "system");
+  });
+
+  function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    ws.send(text);
+    msgInput.value = "";
+  }
+</script>
+</body>
+</html>
